@@ -355,7 +355,7 @@
     <repository>
       <id>github</id>
       <name>GitHub OWNER Apache Maven Packages</name>
-      <url>https://maven.pkg.github.com/headout/unified-qa-framework</url>
+      <url>https://maven.pkg.github.com/headout/autoheal-locator</url>
     </repository>
 
   </distributionManagement>
