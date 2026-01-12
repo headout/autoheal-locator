@@ -99,9 +99,9 @@ Add this to your `pom.xml`:
 
 ```xml
 <dependency>
-  <groupId>io.github.sanjaypg</groupId>
+  <groupId>com.headout</groupId>
   <artifactId>autoheal-locator</artifactId>
-  <version>1.0.5</version>
+  <version>1.0.0</version>
 </dependency>
 ```
 
@@ -449,9 +449,9 @@ mvn clean install -DskipTests
 Then use in your project:
 ```xml
 <dependency>
-  <groupId>io.github.sanjaypg</groupId>
+  <groupId>com.headout</groupId>
   <artifactId>autoheal-locator</artifactId>
-  <version>1.0.5</version>
+  <version></version>1.0.0</version>
 </dependency>
 ```
 

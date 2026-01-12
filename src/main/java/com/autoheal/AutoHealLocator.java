@@ -29,6 +29,7 @@ import com.autoheal.monitoring.AutoHealMetrics;
 import com.autoheal.monitoring.HealthStatus;
 import com.autoheal.reporting.AutoHealReporter;
 import com.autoheal.reporting.AutoHealReporter.SelectorStrategy;
+import com.autoheal.util.HtmlOptimizer;
 import com.autoheal.util.LocatorTypeDetector;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
@@ -125,7 +126,7 @@ public class AutoHealLocator {
 
         // Initialize reporter if reporting is enabled
         this.reporter = configuration.getReportingConfig().isEnabled() ?
-                        new AutoHealReporter(configuration.getAiConfig()) : null;
+                new AutoHealReporter(configuration.getReportingConfig(),configuration.getAiConfig()) : null;
         if (this.reporter != null) {
             logger.info("AutoHeal Reporting System ACTIVE - All selector usage will be tracked");
         }
@@ -136,7 +137,7 @@ public class AutoHealLocator {
                 new VisualElementLocator(aiService)
         );
         this.elementLocator = new CostOptimizedHybridElementLocator(
-                locators, 
+                locators,
                 configuration.getPerformanceConfig().getExecutionStrategy()
         );
 
@@ -229,9 +230,9 @@ public class AutoHealLocator {
 
             success = true;
             elementDetails = String.format("%s#%s.%s",
-                element.getTagName(),
-                element.getAttribute("id") != null ? element.getAttribute("id") : "null",
-                element.getAttribute("class") != null ? element.getAttribute("class") : "null");
+                    element.getTagName(),
+                    element.getAttribute("id") != null ? element.getAttribute("id") : "null",
+                    element.getAttribute("class") != null ? element.getAttribute("class") : "null");
 
             // Use ACTUAL strategy from LocatorResult instead of timing-based inference
             actualSelector = result.getActualSelector();
@@ -262,7 +263,7 @@ public class AutoHealLocator {
             }
 
             reporter.recordSelectorUsage(selector, description, strategy, duration,
-                success, actualSelector, elementDetails, reasoning, tokensUsed);
+                    success, actualSelector, elementDetails, reasoning, tokensUsed);
 
             return element;
 
@@ -272,7 +273,7 @@ public class AutoHealLocator {
             reasoning = "Failed: " + e.getMessage();
 
             reporter.recordSelectorUsage(selector, description, strategy, duration,
-                false, null, null, reasoning, 0);
+                    false, null, null, reasoning, 0);
 
             throw new AutoHealException(ErrorCode.TIMEOUT_EXCEEDED,
                     "Element location timed out", e);
@@ -341,14 +342,14 @@ public class AutoHealLocator {
      * Find element with Playwright auto-healing
      * This method returns a native Playwright Locator with self-healing capabilities
      *
-     * @param page Playwright Page object
+     * @param page            Playwright Page object
      * @param originalLocator Original Playwright locator string (e.g., "getByLabel('Username')")
-     * @param description Human-readable description for AI healing
+     * @param description     Human-readable description for AI healing
      * @return Native Playwright Locator with auto-healing
      */
     public com.microsoft.playwright.Locator find(com.microsoft.playwright.Page page,
-                                                   String originalLocator,
-                                                   String description) {
+                                                 String originalLocator,
+                                                 String description) {
         // When user provides JS-style string directly, both formats are the same
         return findInternal(page, originalLocator, originalLocator, description);
     }
@@ -356,16 +357,16 @@ public class AutoHealLocator {
     /**
      * Internal find method that separates display format from processing format
      *
-     * @param page Playwright Page object
-     * @param displayLocator Locator string for display in reports (Java syntax)
+     * @param page              Playwright Page object
+     * @param displayLocator    Locator string for display in reports (Java syntax)
      * @param processingLocator Locator string for internal processing (JS syntax)
-     * @param description Human-readable description for AI healing
+     * @param description       Human-readable description for AI healing
      * @return Native Playwright Locator with auto-healing
      */
     private com.microsoft.playwright.Locator findInternal(com.microsoft.playwright.Page page,
-                                                           String displayLocator,
-                                                           String processingLocator,
-                                                           String description) {
+                                                          String displayLocator,
+                                                          String processingLocator,
+                                                          String description) {
         if (!(adapter instanceof com.autoheal.impl.adapter.PlaywrightWebAutomationAdapter)) {
             throw new IllegalStateException(
                     "find() method requires PlaywrightWebAutomationAdapter. Current adapter: " +
@@ -405,7 +406,7 @@ public class AutoHealLocator {
                 // Log to report (use displayLocator for "original" field)
                 if (reporter != null) {
                     reporter.recordSelectorUsage(displayLocator, description, strategy,
-                        duration, success, actualSelector, "playwright-locator", reasoning, 0);
+                            duration, success, actualSelector, "playwright-locator", reasoning, 0);
                 }
 
                 // Cache the successful locator (use processingLocator for cache key)
@@ -449,7 +450,7 @@ public class AutoHealLocator {
                     // Log to report (use displayLocator for "original" field)
                     if (reporter != null) {
                         reporter.recordSelectorUsage(displayLocator, description, strategy,
-                            duration, success, actualSelector, "playwright-locator", reasoning, 0);
+                                duration, success, actualSelector, "playwright-locator", reasoning, 0);
                     }
 
                     return cachedLoc;
@@ -482,7 +483,7 @@ public class AutoHealLocator {
                 // Log to report (use displayLocator for "original" field)
                 if (reporter != null) {
                     reporter.recordSelectorUsage(displayLocator, description, strategy,
-                        duration, success, actualSelector, "playwright-locator", reasoning, tokensUsed);
+                            duration, success, actualSelector, "playwright-locator", reasoning, tokensUsed);
                 }
 
                 // Cache the healed locator (use processingLocator for cache key)
@@ -506,7 +507,7 @@ public class AutoHealLocator {
 
             if (reporter != null) {
                 reporter.recordSelectorUsage(displayLocator, description, strategy,
-                    duration, false, null, null, reasoning, 0);
+                        duration, false, null, null, reasoning, 0);
             }
 
             throw new AutoHealException(ErrorCode.ELEMENT_NOT_FOUND,
@@ -516,7 +517,7 @@ public class AutoHealLocator {
 
     /**
      * Find element with Playwright auto-healing using native Locator object (ZERO-REWRITE MIGRATION)
-     *
+     * <p>
      * This overloaded method enables seamless migration for existing Playwright projects by accepting
      * native Playwright Locator objects and automatically converting them to JavaScript-style strings
      * for AI healing.
@@ -541,29 +542,29 @@ public class AutoHealLocator {
      *   <li>Automatically converts to JavaScript-style format internally for AI healing</li>
      * </ul>
      *
-     * @param page Playwright Page object (must not be null)
+     * @param page          Playwright Page object (must not be null)
      * @param nativeLocator Native Playwright Locator object (e.g., page.getByRole(...))
-     * @param description Human-readable description for AI healing (must not be null or empty)
+     * @param description   Human-readable description for AI healing (must not be null or empty)
      * @return Native Playwright Locator with auto-healing capabilities
-     * @throws IllegalArgumentException if page, nativeLocator, or description is null/empty
+     * @throws IllegalArgumentException                                    if page, nativeLocator, or description is null/empty
      * @throws com.autoheal.exception.PlaywrightLocatorExtractionException if locator string cannot be extracted
-     * @throws AutoHealException if element cannot be found even after healing
+     * @throws AutoHealException                                           if element cannot be found even after healing
      * @since 1.0.0
      */
     public com.microsoft.playwright.Locator find(com.microsoft.playwright.Page page,
-                                                   com.microsoft.playwright.Locator nativeLocator,
-                                                   String description) {
+                                                 com.microsoft.playwright.Locator nativeLocator,
+                                                 String description) {
         // Validation
         if (page == null) {
             throw new IllegalArgumentException("Page cannot be null");
         }
         if (nativeLocator == null) {
             throw new IllegalArgumentException(
-                "Native Locator cannot be null. Please provide a valid Playwright Locator object.");
+                    "Native Locator cannot be null. Please provide a valid Playwright Locator object.");
         }
         if (description == null || description.trim().isEmpty()) {
             throw new IllegalArgumentException(
-                "Description cannot be null or empty. Provide a meaningful description for AI healing.");
+                    "Description cannot be null or empty. Provide a meaningful description for AI healing.");
         }
 
         try {
@@ -574,7 +575,7 @@ public class AutoHealLocator {
 
             // Convert to Java syntax for the report (what user wants to see)
             com.autoheal.model.PlaywrightLocator parsedLocator =
-                com.autoheal.util.PlaywrightLocatorParser.parse(jsStyleLocator);
+                    com.autoheal.util.PlaywrightLocatorParser.parse(jsStyleLocator);
             String javaStyleLocator = parsedLocator.toSelectorString();
 
             logger.debug("Zero-rewrite migration: Java-style for report: {}", javaStyleLocator);
@@ -588,11 +589,11 @@ public class AutoHealLocator {
             // Re-throw with helpful context
             logger.error("Failed to extract locator from native Playwright Locator: {}", e.getMessage());
             throw new AutoHealException(
-                ErrorCode.INVALID_LOCATOR,
-                "Cannot use native Playwright Locator object: " + e.getMessage() + " " +
-                "For complex locators, use JavaScript-style string format instead: " +
-                "autoHeal.find(page, \"getByRole('button', { name: 'Text' })\", \"description\")",
-                e
+                    ErrorCode.INVALID_LOCATOR,
+                    "Cannot use native Playwright Locator object: " + e.getMessage() + " " +
+                            "For complex locators, use JavaScript-style string format instead: " +
+                            "autoHeal.find(page, \"getByRole('button', { name: 'Text' })\", \"description\")",
+                    e
             );
         }
     }
@@ -621,8 +622,8 @@ public class AutoHealLocator {
             case GET_BY_ROLE -> {
                 String name = (String) locator.getOption("name");
                 yield name != null
-                    ? String.format("getByRole('%s', { name: '%s' })", locator.getValue(), name.replace("'", "\\'"))
-                    : String.format("getByRole('%s')", locator.getValue());
+                        ? String.format("getByRole('%s', { name: '%s' })", locator.getValue(), name.replace("'", "\\'"))
+                        : String.format("getByRole('%s')", locator.getValue());
             }
             case GET_BY_LABEL -> String.format("getByLabel('%s')", locator.getValue().replace("'", "\\'"));
             case GET_BY_PLACEHOLDER -> String.format("getByPlaceholder('%s')", locator.getValue().replace("'", "\\'"));
@@ -684,7 +685,7 @@ public class AutoHealLocator {
 
         logger.debug("Playwright DOM-only strategy: Using only DOM analysis");
         String html = page.content();
-
+        html = HtmlOptimizer.optimize(html);
         com.autoheal.model.AIAnalysisResult result = aiService.analyzeDOM(
                 html,
                 description,
@@ -715,7 +716,7 @@ public class AutoHealLocator {
 
             // Validate DOM result works
             com.autoheal.impl.adapter.PlaywrightWebAutomationAdapter pwAdapter =
-                (com.autoheal.impl.adapter.PlaywrightWebAutomationAdapter) adapter;
+                    (com.autoheal.impl.adapter.PlaywrightWebAutomationAdapter) adapter;
             com.microsoft.playwright.Locator testLoc = pwAdapter.executePlaywrightLocator(domResult.locator);
 
             if (pwAdapter.countElements(testLoc) == 1) {
@@ -740,24 +741,24 @@ public class AutoHealLocator {
         logger.debug("Playwright Parallel: Running DOM + Visual in parallel");
 
         CompletableFuture<PlaywrightHealingResult> domFuture =
-            CompletableFuture.supplyAsync(() -> {
-                try {
-                    return performPlaywrightDOMHealing(page, originalLocator, description);
-                } catch (Exception e) {
-                    logger.debug("Parallel DOM failed: {}", e.getMessage());
-                    return null;
-                }
-            });
+                CompletableFuture.supplyAsync(() -> {
+                    try {
+                        return performPlaywrightDOMHealing(page, originalLocator, description);
+                    } catch (Exception e) {
+                        logger.debug("Parallel DOM failed: {}", e.getMessage());
+                        return null;
+                    }
+                });
 
         CompletableFuture<PlaywrightHealingResult> visualFuture =
-            CompletableFuture.supplyAsync(() -> {
-                try {
-                    return performPlaywrightVisualHealing(page, originalLocator, description);
-                } catch (Exception e) {
-                    logger.debug("Parallel Visual failed: {}", e.getMessage());
-                    return null;
-                }
-            });
+                CompletableFuture.supplyAsync(() -> {
+                    try {
+                        return performPlaywrightVisualHealing(page, originalLocator, description);
+                    } catch (Exception e) {
+                        logger.debug("Parallel Visual failed: {}", e.getMessage());
+                        return null;
+                    }
+                });
 
         // Wait for both to complete
         CompletableFuture.allOf(domFuture, visualFuture).get();
@@ -766,7 +767,7 @@ public class AutoHealLocator {
         PlaywrightHealingResult visualResult = visualFuture.get();
 
         com.autoheal.impl.adapter.PlaywrightWebAutomationAdapter pwAdapter =
-            (com.autoheal.impl.adapter.PlaywrightWebAutomationAdapter) adapter;
+                (com.autoheal.impl.adapter.PlaywrightWebAutomationAdapter) adapter;
 
         // Test both results and pick the best one
         if (domResult != null) {
@@ -801,7 +802,7 @@ public class AutoHealLocator {
 
             // Validate Visual result works
             com.autoheal.impl.adapter.PlaywrightWebAutomationAdapter pwAdapter =
-                (com.autoheal.impl.adapter.PlaywrightWebAutomationAdapter) adapter;
+                    (com.autoheal.impl.adapter.PlaywrightWebAutomationAdapter) adapter;
             com.microsoft.playwright.Locator testLoc = pwAdapter.executePlaywrightLocator(visualResult.locator);
 
             if (pwAdapter.countElements(testLoc) == 1) {
@@ -1022,7 +1023,7 @@ public class AutoHealLocator {
         // Multiple elements found - use AI for disambiguation
         try {
             logger.debug("Multiple elements found ({}), using AI for disambiguation with description: {}",
-                        elements.size(), request.getDescription());
+                    elements.size(), request.getDescription());
 
             return aiService.selectBestMatchingElement(elements, request.getDescription())
                     .get(5, TimeUnit.SECONDS);
@@ -1081,7 +1082,7 @@ public class AutoHealLocator {
      * Remove a specific cached selector
      *
      * @param originalSelector The original selector to remove from cache
-     * @param description The description used when the selector was cached
+     * @param description      The description used when the selector was cached
      * @return true if the entry was removed, false if it didn't exist
      */
     public boolean removeCachedSelector(String originalSelector, String description) {

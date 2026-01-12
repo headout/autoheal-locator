@@ -262,15 +262,17 @@ public class ResilientAIService implements AIService {
             %s
 
             PRIORITY ORDER (try in this sequence):
-            1. getByRole() - ARIA role with accessible name (e.g., button, textbox, heading, link)
-            2. getByLabel() - Form label text associated with input
-            3. getByPlaceholder() - Input placeholder text
-            4. getByText() - Visible text content
-            5. getByTestId() - Test ID attribute (data-testid, data-test)
-            6. CSS Selector - FALLBACK ONLY if no user-facing option exists
+  
+            1. xpath() - Use xpath to perform proper xpath placeholder text data-qa-marker,xpath, name, class, or text content
+            2 - id-  ID selectors (#id) when available
+            3. getByLabel() - Form label text associated with input
+            4. getByPlaceholder() - Input placeholder text
+            5. getByText() - Visible text content
+            6. getByTestId() - Test ID attribute (data-testid, data-test)
+            7. CSS Selector - FALLBACK ONLY if no user-facing option exists
 
             RULES:
-            - Prefer accessibility-first locators (1-5) over CSS selectors
+            - Prefer accessibility-first locators (1-6) over CSS selectors
             - Use CSS selector ONLY as last resort when no good user-facing option exists
             - Ensure locator is unique and stable
             - Avoid index-based or complex brittle selectors
@@ -278,7 +280,7 @@ public class ResilientAIService implements AIService {
 
             Respond with valid JSON only:
             {
-                "locatorType": "getByRole|getByLabel|getByPlaceholder|getByText|getByTestId|css",
+                "locatorType": "xpath|ID|className|getByRole|getByLabel|getByPlaceholder|getByText|getByTestId|css",
                 "value": "button|Username|.class-name",
                 "options": {"name": "Submit"},
                 "confidence": 0.95,
