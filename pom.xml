@@ -2,14 +2,14 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>io.github.sanjaypg</groupId>
+  <groupId>com.headout</groupId>
   <artifactId>autoheal-locator</artifactId>
-  <version>1.0.6</version>
+  <version>1.0.0</version>
   <packaging>jar</packaging>
 
   <name>AutoHeal Locator</name>
   <description>AI-powered Selenium and Playwright element locator with self-healing capabilities</description>
-  <url>https://github.com/SanjayPG/autoheal-locator</url>
+  <url>https://github.com/headout/autoheal-locator</url>
 
   <licenses>
     <license>
@@ -18,30 +18,16 @@
     </license>
   </licenses>
 
-  <developers>
-    <developer>
-      <id>SanjayPG</id>
-      <name>Sanjay PG</name>
-      <email>sanjay@example.com</email>
-      <url>https://github.com/SanjayPG</url>
-    </developer>
-  </developers>
-
-  <!-- SCM Information -->
-  <scm>
-    <connection>scm:git:git://github.com/SanjayPG/autoheal-locator.git</connection>
-    <developerConnection>scm:git:ssh://github.com/SanjayPG/autoheal-locator.git</developerConnection>
-    <url>https://github.com/SanjayPG/autoheal-locator/tree/main</url>
-  </scm>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <maven.compiler.source>17</maven.compiler.source>
-    <maven.compiler.target>17</maven.compiler.target>
-
+    <maven.compiler.source>21</maven.compiler.source>
+    <maven.compiler.target>21</maven.compiler.target>
+    <maven-compiler-plugin-version>3.11.0</maven-compiler-plugin-version>
+    <maven-jar-plugin-version>3.3.0</maven-jar-plugin-version>
     <!-- Dependency Versions -->
-    <playwright.version>1.40.0</playwright.version>
-    <selenium.version>4.15.0</selenium.version>
+    <playwright.version>1.55.0</playwright.version>
+    <selenium.version>4.27.0</selenium.version>
     <caffeine.version>3.1.8</caffeine.version>
     <jackson.version>2.16.0</jackson.version>
     <okhttp.version>4.12.0</okhttp.version>
@@ -53,6 +39,12 @@
   </properties>
 
   <dependencies>
+    <dependency>
+      <groupId>org.jsoup</groupId>
+      <artifactId>jsoup</artifactId>
+      <version>1.17.2</version>
+    </dependency>
+
     <!-- ==================== CORE AUTOMATION FRAMEWORKS ==================== -->
 
     <!-- Playwright (provided - let consuming projects choose version) -->
@@ -183,13 +175,6 @@
       <scope>test</scope>
     </dependency>
 
-    <!-- Add this for BrowserWebDriverContainer -->
-    <dependency>
-      <groupId>org.testcontainers</groupId>
-      <artifactId>testcontainers</artifactId>
-      <version>${testcontainers.version}</version>
-      <scope>test</scope>
-    </dependency>
 
     <dependency>
       <groupId>ch.qos.logback</groupId>
@@ -217,123 +202,96 @@
 
   <build>
     <plugins>
-      <!-- Maven Compiler Plugin -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.11.0</version>
+        <artifactId>maven-clean-plugin</artifactId>
+        <version>3.1.0</version>
         <configuration>
-          <source>17</source>
-          <target>17</target>
+          <excludeDefaultDirectories>true</excludeDefaultDirectories>
+          <filesets>
+            <fileset>
+              <directory>target</directory>
+              <directory>test-output</directory>
+              <includes>
+                <include>**</include>
+              </includes>
+              <excludes>
+                <exclude>cucumber-reports</exclude>
+              </excludes>
+            </fileset>
+          </filesets>
         </configuration>
       </plugin>
-
-      <!-- Maven Surefire Plugin -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
-        <version>3.2.2</version>
+        <version>3.0.0-M6</version>
         <configuration>
-          <includes>
-            <include>**/*Test.java</include>
-            <include>**/*Tests.java</include>
-          </includes>
-          <excludes>
-            <exclude>**/performance/**</exclude>
-            <exclude>**/integration/**</exclude>
-          </excludes>
+          <testFailureIgnore>true</testFailureIgnore>
+          <useSystemClassLoader>false</useSystemClassLoader>
+          <argLine>-Xmx4g -Xms2g -XX:+HeapDumpOnOutOfMemoryError</argLine>
         </configuration>
       </plugin>
 
-      <!-- Maven Source Plugin -->
       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-source-plugin</artifactId>
-        <version>3.3.0</version>
+        <artifactId>maven-resources-plugin</artifactId>
+        <version>3.3.1</version>
         <executions>
           <execution>
-            <id>attach-sources</id>
+            <id>copy-resources</id>
+            <phase>validate</phase>
             <goals>
-              <goal>jar</goal>
+              <goal>copy-resources</goal>
             </goals>
+            <configuration>
+              <outputDirectory>${basedir}/target/headout</outputDirectory>
+              <resources>
+                <resource>
+                  <directory>resources</directory>
+                  <filtering>true</filtering>
+                </resource>
+              </resources>
+            </configuration>
           </execution>
         </executions>
       </plugin>
 
-      <!-- Maven Javadoc Plugin -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-javadoc-plugin</artifactId>
-        <version>3.6.3</version>
+        <version>3.4.0</version>
         <configuration>
-          <source>15</source>
-          <doclint>none</doclint>
+          <doclint>all,-missing</doclint>
         </configuration>
         <executions>
           <execution>
-            <id>attach-javadocs</id>
+            <id>attach-javadoc</id>
             <goals>
               <goal>jar</goal>
             </goals>
           </execution>
         </executions>
       </plugin>
-
-      <!-- JaCoCo for code coverage - temporarily disabled for Java 24 compatibility -->
-      <!-- <plugin>
-        <groupId>org.jacoco</groupId>
-        <artifactId>jacoco-maven-plugin</artifactId>
-        <version>0.8.12</version>
-        <executions>
-          <execution>
-            <goals>
-              <goal>prepare-agent</goal>
-            </goals>
-          </execution>
-          <execution>
-            <id>report</id>
-            <phase>test</phase>
-            <goals>
-              <goal>report</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin> -->
-
-      <!-- Source JAR Plugin -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-source-plugin</artifactId>
         <version>3.2.1</version>
         <executions>
           <execution>
-            <id>attach-sources</id>
+            <id>attach-source</id>
             <goals>
               <goal>jar</goal>
             </goals>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>${maven-jar-plugin-version}</version>
       </plugin>
 
-      <!-- Javadoc JAR Plugin -->
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-javadoc-plugin</artifactId>
-        <version>3.4.1</version>
-        <executions>
-          <execution>
-            <id>attach-javadocs</id>
-            <goals>
-              <goal>jar</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <source>17</source>
-          <doclint>none</doclint>
-        </configuration>
-      </plugin>
     </plugins>
+
   </build>
 
   <!-- ==================== PROFILES ==================== -->
@@ -388,60 +346,18 @@
       <id>release</id>
       <build>
         <plugins>
-          <!-- GPG Plugin for signing -->
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-gpg-plugin</artifactId>
-            <version>3.1.0</version>
-            <executions>
-              <execution>
-                <id>sign-artifacts</id>
-                <phase>verify</phase>
-                <goals>
-                  <goal>sign</goal>
-                </goals>
-                <configuration>
-                  <passphrase>${env.MAVEN_GPG_PASSPHRASE}</passphrase>
-                  <gpgArguments>
-                    <arg>--batch</arg>
-                    <arg>--yes</arg>
-                    <arg>--no-tty</arg>
-                    <arg>--pinentry-mode</arg>
-                    <arg>loopback</arg>
-                  </gpgArguments>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-
-          <!-- Central Publishing Plugin -->
-          <plugin>
-            <groupId>org.sonatype.central</groupId>
-            <artifactId>central-publishing-maven-plugin</artifactId>
-            <version>0.4.0</version>
-            <extensions>true</extensions>
-            <configuration>
-              <publishingServerId>central</publishingServerId>
-              <tokenAuth>true</tokenAuth>
-            </configuration>
-          </plugin>
         </plugins>
       </build>
     </profile>
   </profiles>
 
   <distributionManagement>
-    <!-- Maven Central via Central Portal -->
-    <snapshotRepository>
-      <id>central</id>
-      <name>Central Repository Snapshots</name>
-      <url>https://central.sonatype.com/</url>
-    </snapshotRepository>
     <repository>
-      <id>central</id>
-      <name>Central Repository</name>
-      <url>https://central.sonatype.com/</url>
+      <id>github</id>
+      <name>GitHub OWNER Apache Maven Packages</name>
+      <url>https://maven.pkg.github.com/headout/unified-qa-framework</url>
     </repository>
+
   </distributionManagement>
 
 

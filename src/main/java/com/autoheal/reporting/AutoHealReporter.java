@@ -1,5 +1,6 @@
 package com.autoheal.reporting;
 
+import com.autoheal.config.ReportingConfig;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -34,7 +35,6 @@ public class AutoHealReporter {
     public AutoHealReporter() {
         this.testRunId = "AutoHeal_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
         this.startTime = LocalDateTime.now();
-
         // Default values when no configuration is provided
         this.aiProvider = "OpenAI";
         this.aiModel = "gpt-4o-mini";
@@ -61,24 +61,38 @@ public class AutoHealReporter {
         this.maxRetries = aiConfig.getMaxRetries();
     }
 
+    public AutoHealReporter(ReportingConfig reportingConfig, com.autoheal.config.AIConfig aiConfig) {
+        this.testRunId = reportingConfig.getOutputDirectory() +File.separator+ reportingConfig.getReportNamePrefix();
+        this.startTime = LocalDateTime.now();
+        // Read from actual configuration - now supports user-specified models
+        this.aiProvider = aiConfig.getProvider().toString();
+        this.aiModel = aiConfig.getModel(); // Use configured model (user choice or smart default)
+        this.apiEndpoint = aiConfig.getApiUrl();
+        this.domTemperature = aiConfig.getTemperatureDOM(); // Read from configuration
+        this.visualTemperature = aiConfig.getTemperatureVisual(); // Read from configuration
+        this.domMaxTokens = aiConfig.getMaxTokensDOM(); // Read from configuration
+        this.visualMaxTokens = aiConfig.getMaxTokensVisual(); // Read from configuration
+        this.maxRetries = aiConfig.getMaxRetries();
+    }
+
     /**
      * Record a selector usage event
      */
     public void recordSelectorUsage(String originalSelector, String description,
-                                  SelectorStrategy strategy, long executionTimeMs,
-                                  boolean success, String actualSelector,
-                                  String elementDetails, String reasoning) {
+                                    SelectorStrategy strategy, long executionTimeMs,
+                                    boolean success, String actualSelector,
+                                    String elementDetails, String reasoning) {
         recordSelectorUsage(originalSelector, description, strategy, executionTimeMs,
-                           success, actualSelector, elementDetails, reasoning, 0);
+                success, actualSelector, elementDetails, reasoning, 0);
     }
 
     /**
      * Record a selector usage event with token usage information
      */
     public void recordSelectorUsage(String originalSelector, String description,
-                                  SelectorStrategy strategy, long executionTimeMs,
-                                  boolean success, String actualSelector,
-                                  String elementDetails, String reasoning, long tokensUsed) {
+                                    SelectorStrategy strategy, long executionTimeMs,
+                                    boolean success, String actualSelector,
+                                    String elementDetails, String reasoning, long tokensUsed) {
         SelectorReport report = new SelectorReport();
         report.originalSelector = originalSelector;
         report.description = description;
@@ -123,9 +137,9 @@ public class AutoHealReporter {
         }
 
         System.out.printf("%s %s [%dms]%s %s → %s%n",
-            statusIcon, icon, report.executionTimeMs, tokenInfo,
-            report.originalSelector,
-            report.success ? report.actualSelector : "FAILED");
+                statusIcon, icon, report.executionTimeMs, tokenInfo,
+                report.originalSelector,
+                report.success ? report.actualSelector : "FAILED");
 
         if (!report.originalSelector.equals(report.actualSelector) && report.success) {
             System.out.println("   [HEALED] " + report.reasoning);
@@ -180,22 +194,22 @@ public class AutoHealReporter {
             stats.put("domHealed", domHealed);
             stats.put("visualHealed", visualHealed);
             stats.put("cached", cached);
-            stats.put("successRate", (double)successful / reports.size() * 100);
+            stats.put("successRate", (double) successful / reports.size() * 100);
 
             root.set("statistics", stats);
 
             // AI Implementation Details
             boolean hasAIStrategies = reports.stream().anyMatch(r ->
-                r.strategy == SelectorStrategy.DOM_ANALYSIS || r.strategy == SelectorStrategy.VISUAL_ANALYSIS);
+                    r.strategy == SelectorStrategy.DOM_ANALYSIS || r.strategy == SelectorStrategy.VISUAL_ANALYSIS);
 
             if (hasAIStrategies) {
                 ObjectNode aiDetails = mapper.createObjectNode();
 
                 // Get first AI report for configuration details
                 SelectorReport aiReport = reports.stream()
-                    .filter(r -> r.strategy == SelectorStrategy.DOM_ANALYSIS || r.strategy == SelectorStrategy.VISUAL_ANALYSIS)
-                    .findFirst()
-                    .orElse(null);
+                        .filter(r -> r.strategy == SelectorStrategy.DOM_ANALYSIS || r.strategy == SelectorStrategy.VISUAL_ANALYSIS)
+                        .findFirst()
+                        .orElse(null);
 
                 if (aiReport != null) {
                     // Configuration
@@ -385,7 +399,7 @@ public class AutoHealReporter {
 
         // AI Implementation Details section
         boolean hasAIStrategies = reports.stream().anyMatch(r ->
-            r.strategy == SelectorStrategy.DOM_ANALYSIS || r.strategy == SelectorStrategy.VISUAL_ANALYSIS);
+                r.strategy == SelectorStrategy.DOM_ANALYSIS || r.strategy == SelectorStrategy.VISUAL_ANALYSIS);
 
         if (hasAIStrategies) {
             html.append("<h2>[AI] AI Implementation Details</h2>");
@@ -393,9 +407,9 @@ public class AutoHealReporter {
 
             // Get first AI report for configuration details
             SelectorReport aiReport = reports.stream()
-                .filter(r -> r.strategy == SelectorStrategy.DOM_ANALYSIS || r.strategy == SelectorStrategy.VISUAL_ANALYSIS)
-                .findFirst()
-                .orElse(null);
+                    .filter(r -> r.strategy == SelectorStrategy.DOM_ANALYSIS || r.strategy == SelectorStrategy.VISUAL_ANALYSIS)
+                    .findFirst()
+                    .orElse(null);
 
             if (aiReport != null) {
                 html.append("<div style='display: grid; grid-template-columns: 1fr 1fr; gap: 20px;'>");
@@ -616,7 +630,7 @@ public class AutoHealReporter {
         long visualTokens = reports.stream().filter(r -> r.strategy == SelectorStrategy.VISUAL_ANALYSIS).mapToLong(r -> r.tokensUsed).sum();
 
         text.append("SUMMARY STATISTICS:\n");
-        text.append("- Successful: ").append(successful).append(" (").append(String.format("%.1f%%", (double)successful / reports.size() * 100)).append(")\n");
+        text.append("- Successful: ").append(successful).append(" (").append(String.format("%.1f%%", (double) successful / reports.size() * 100)).append(")\n");
         text.append("- Failed: ").append(reports.size() - successful).append("\n");
         text.append("- Original Selectors (no healing): ").append(originalStrategy).append("\n");
         text.append("- DOM Healed: ").append(domHealed).append("\n");
@@ -629,7 +643,7 @@ public class AutoHealReporter {
 
         // AI Implementation Details section
         boolean hasAIStrategies = reports.stream().anyMatch(r ->
-            r.strategy == SelectorStrategy.DOM_ANALYSIS || r.strategy == SelectorStrategy.VISUAL_ANALYSIS);
+                r.strategy == SelectorStrategy.DOM_ANALYSIS || r.strategy == SelectorStrategy.VISUAL_ANALYSIS);
 
         if (hasAIStrategies) {
             text.append("AI IMPLEMENTATION DETAILS:\n");
@@ -637,9 +651,9 @@ public class AutoHealReporter {
 
             // Get first AI report for configuration details
             SelectorReport aiReport = reports.stream()
-                .filter(r -> r.strategy == SelectorStrategy.DOM_ANALYSIS || r.strategy == SelectorStrategy.VISUAL_ANALYSIS)
-                .findFirst()
-                .orElse(null);
+                    .filter(r -> r.strategy == SelectorStrategy.DOM_ANALYSIS || r.strategy == SelectorStrategy.VISUAL_ANALYSIS)
+                    .findFirst()
+                    .orElse(null);
 
             if (aiReport != null) {
                 text.append("Configuration:\n");
@@ -736,7 +750,7 @@ public class AutoHealReporter {
         System.out.println("=".repeat(60));
         System.out.printf("Total: %d | Success: %d | Failed: %d%n", reports.size(), successful, reports.size() - successful);
         System.out.printf("Original: %d | DOM Healed: %d | Visual: %d | Cached: %d%n",
-            originalStrategy, domHealed, visualHealed, cached);
+                originalStrategy, domHealed, visualHealed, cached);
         if (totalTokens > 0) {
             System.out.printf("Token Usage - Total: %d | DOM: %d | Visual: %d%n", totalTokens, domTokens, visualTokens);
         }
