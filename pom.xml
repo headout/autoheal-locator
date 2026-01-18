@@ -3,13 +3,13 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>com.headout</groupId>
-  <artifactId>autoheal-locator</artifactId>
+  <artifactId>autoheal</artifactId>
   <version>1.0.2</version>
   <packaging>jar</packaging>
 
   <name>AutoHeal Locator</name>
   <description>AI-powered Selenium and Playwright element locator with self-healing capabilities</description>
-  <url>https://github.com/headout/autoheal-locator</url>
+  <url>https://github.com/headout/autoheal</url>
 
   <licenses>
     <license>
